@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { CATEGORIES, PRODUCTS } from '../data/mockData';
+import { CATEGORIES, PRODUCTS as INITIAL_MOCK_PRODUCTS } from '../data/mockData';
 
 import Navbar from '../components/Navbar';
 import AiScamModal from '../components/AiScamModal';
@@ -16,10 +16,12 @@ import Price from '../components/ui/Price';
 
 import {
   ShieldCheck, Sparkles, DollarSign, MapPin, Award, X, ShoppingCart,
-  CheckCircle2, Filter, ChevronDown, Menu, Navigation, Mic, MicOff,
+  CheckCircle2, Filter, ChevronDown, Menu, Navigation, Mic, MicOff, Loader2,
 } from 'lucide-react';
 
 const FALLBACK_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23EFF1EC"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%237A828A" font-family="sans-serif" font-size="14">Image unavailable</text></svg>';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
 
 const calculateGpsDistanceKm = (lat, lng) => {
   if (!lat || !lng) return 2.5;
@@ -41,6 +43,11 @@ export default function Marketplace({ activeVendor, onVendorLogout, cartItems = 
 
   const [selectedCategory, setSelectedCategory] = useState(urlCategory);
   const [searchQuery, setSearchQuery] = useState(urlSearch);
+  
+  // Live API State
+  const [products, setProducts] = useState(INITIAL_MOCK_PRODUCTS);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [flashDropSlideIndex, setFlashDropSlideIndex] = useState(0);
   const [aiFilter, setAiFilter] = useState('none');
@@ -53,6 +60,60 @@ export default function Marketplace({ activeVendor, onVendorLogout, cartItems = 
   const [isListening, setIsListening] = useState(false);
 
   const cartCount = cartItems.length;
+
+  // --------------------------------------------------------------------------
+  // Fetch live products from the Express API endpoint
+  // --------------------------------------------------------------------------
+  useEffect(() => {
+    async function fetchProductsFromBackend() {
+      try {
+        setIsLoadingProducts(true);
+        const queryParams = new URLSearchParams();
+        if (selectedCategory && selectedCategory !== 'all') {
+          queryParams.append('category', selectedCategory);
+        }
+        if (searchQuery.trim()) {
+          queryParams.append('search', searchQuery.trim());
+        }
+
+        const res = await fetch(`${API_BASE_URL}/products?${queryParams.toString()}`);
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+        
+        const data = await res.json();
+        
+        // Map backend API schema to matching frontend properties
+        const liveItems = (data.data || []).map((item) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          salePrice: item.price,
+          originalPrice: item.price * 1.15,
+          category: item.category?.name || item.category || 'General',
+          vendorName: item.vendor?.shopName || 'Verified Vendor',
+          image: item.imageUrl || FALLBACK_IMAGE,
+          rating: 4.8,
+          isFlashDrop: item.isAiGenerated,
+          tags: item.tags || [],
+        }));
+
+        if (liveItems.length > 0) {
+          setProducts(liveItems);
+        } else if (!searchQuery && selectedCategory === 'all') {
+          // Keep mock products fallback if database is empty
+          setProducts(INITIAL_MOCK_PRODUCTS);
+        } else {
+          setProducts([]);
+        }
+      } catch (err) {
+        console.warn('Backend API connection failed, falling back to local dataset:', err);
+        setProducts(INITIAL_MOCK_PRODUCTS);
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    }
+
+    fetchProductsFromBackend();
+  }, [selectedCategory, searchQuery]);
 
   useEffect(() => {
     setSelectedCategory(urlCategory);
@@ -106,8 +167,8 @@ export default function Marketplace({ activeVendor, onVendorLogout, cartItems = 
   };
 
   const flashDrops = useMemo(
-    () => (PRODUCTS || []).filter((p) => p.isFlashDrop || p.salePrice < p.originalPrice),
-    []
+    () => (products || []).filter((p) => p.isFlashDrop || p.salePrice < p.originalPrice),
+    [products]
   );
 
   useEffect(() => {
@@ -119,13 +180,7 @@ export default function Marketplace({ activeVendor, onVendorLogout, cartItems = 
   }, [flashDrops.length]);
 
   const processedProducts = useMemo(() => {
-    let list = (PRODUCTS || []).filter((product) => {
-      const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-      const matchesSearch = !searchQuery.trim()
-        || product.title.toLowerCase().includes(searchQuery.toLowerCase())
-        || (product.vendorName && product.vendorName.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchesCategory && matchesSearch;
-    });
+    let list = [...products];
 
     if (aiFilter === 'cheapest') list.sort((a, b) => a.salePrice - b.salePrice);
     else if (aiFilter === 'nearest') {
@@ -137,7 +192,7 @@ export default function Marketplace({ activeVendor, onVendorLogout, cartItems = 
     } else if (aiFilter === 'quality') list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
     return list;
-  }, [selectedCategory, searchQuery, aiFilter]);
+  }, [products, aiFilter]);
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-paper">
@@ -236,7 +291,7 @@ export default function Marketplace({ activeVendor, onVendorLogout, cartItems = 
           {searchQuery.trim() !== '' && (
             <AiSearchResults
               searchQuery={searchQuery}
-              products={PRODUCTS || []}
+              products={products}
               onAddToCart={handleAddToCart}
               onScanScam={(p) => setScamModalProduct(p)}
               onQuickSearch={(term) => handleSearchChange(term)}
@@ -308,29 +363,37 @@ export default function Marketplace({ activeVendor, onVendorLogout, cartItems = 
               <h2 className="section-heading">Marketplace</h2>
               <span className="text-xs text-ink-faint">{processedProducts.length} items</span>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {processedProducts.map((product) => (
-                <div key={product.id} onClick={() => setSelectedProductModal(product)} className="cursor-pointer">
-                  <ProductCard
-                    product={product}
-                    calculateGpsDistanceKm={calculateGpsDistanceKm}
-                    onAddToCart={(e) => { e?.stopPropagation?.(); handleAddToCart(product); }}
-                    onScanScam={(p) => setScamModalProduct(p)}
-                  />
-                </div>
-              ))}
-              {processedProducts.length === 0 && (
-                <div className="col-span-full card p-10 text-center text-sm text-ink-soft">
-                  No products match your filters. Try a different category or search term.
-                </div>
-              )}
-            </div>
+
+            {isLoadingProducts ? (
+              <div className="flex h-32 w-full items-center justify-center gap-2 text-sm text-ink-soft">
+                <Loader2 size={20} className="animate-spin text-moss" />
+                Loading live products...
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {processedProducts.map((product) => (
+                  <div key={product.id} onClick={() => setSelectedProductModal(product)} className="cursor-pointer">
+                    <ProductCard
+                      product={product}
+                      calculateGpsDistanceKm={calculateGpsDistanceKm}
+                      onAddToCart={(e) => { e?.stopPropagation?.(); handleAddToCart(product); }}
+                      onScanScam={(p) => setScamModalProduct(p)}
+                    />
+                  </div>
+                ))}
+                {processedProducts.length === 0 && (
+                  <div className="col-span-full card p-10 text-center text-sm text-ink-soft">
+                    No products match your filters. Try a different category or search term.
+                  </div>
+                )}
+              </div>
+            )}
           </section>
         </main>
 
         {/* Right sidebar */}
         <aside className="hidden max-h-[calc(100vh-6rem)] overflow-y-auto lg:sticky lg:top-32 lg:col-span-2 lg:block">
-          <RightSidebar products={PRODUCTS || []} activeSlideIndex={activeSlideIndex} setActiveSlideIndex={setActiveSlideIndex} onAddToCart={handleAddToCart} />
+          <RightSidebar products={products} activeSlideIndex={activeSlideIndex} setActiveSlideIndex={setActiveSlideIndex} onAddToCart={handleAddToCart} />
         </aside>
       </div>
 
