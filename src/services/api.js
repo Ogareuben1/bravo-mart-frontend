@@ -7,23 +7,33 @@
 // needs to change.
 //
 // Backend reference (see bravomart-backend/README.md):
-//   POST /api/auth/login                -> { user, accessToken }  (+ refresh cookie)
-//   POST /api/auth/refresh              -> { accessToken }        (reads refresh cookie)
-//   POST /api/auth/logout               -> { loggedOut: true }
-//   GET  /api/auth/me                   -> current user (needs Authorization header)
-//   POST /api/admin/products/ai-create  -> the AI listing generator (needs Authorization header)
+//   POST /api/auth/login                 -> { user, accessToken }  (+ refresh cookie)
+//   POST /api/auth/refresh               -> { accessToken }        (reads refresh cookie)
+//   POST /api/auth/logout                -> { loggedOut: true }
+//   GET  /api/auth/me                    -> current user (needs Authorization header)
+//   POST /api/admin/products/ai-create   -> the AI listing generator (needs Authorization header)
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  'http://localhost:4000/api';
 
 // The AI endpoint returns image URLs relative to the BACKEND ("/uploads/products/…"),
 // not the frontend — so an <img src> needs the backend's origin prepended.
-// API_BASE_URL is "http://localhost:4000/api"; strip the trailing "/api" to get
-// the plain origin the uploaded files are served from.
+// API_BASE_URL is "https://bravo-mart-backend.onrender.com/api"; strip the trailing "/api"
+// to get the plain origin the uploaded files are served from.
 const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
 export function resolveMediaUrl(path) {
-  if (!path) return path;
-  if (/^https?:\/\//i.test(path)) return path; // already absolute
+  if (!path || typeof path !== 'string') return path;
+  if (path.startsWith('data:')) return path;
+
+  // Rewrite any local dev URL saved in the database to the live backend server
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(path)) {
+    return path.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, API_ORIGIN);
+  }
+
+  if (/^https?:\/\//i.test(path)) return path; // already absolute external/cloud URL
   return `${API_ORIGIN}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 

@@ -8,6 +8,7 @@ import { Truck, Store, ArrowRight, Search, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
+import { resolveMediaUrl } from '../services/api';
 
 // Backend API URL configured via environment variables with localhost fallback
 const API_BASE_URL =
@@ -20,13 +21,13 @@ const FALLBACK_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/20
 
 // Sector icons mapping for landing page category shortcuts
 const CATEGORY_ICON_HINT = {
-  all: '🌐', 
-  local_food: '🌾', 
-  groceries: '🛒', 
+  all: '🌐',
+  local_food: '🌾',
+  groceries: '🛒',
   real_estate: '🏠',
-  heavy_machinery: '🚜', 
-  electronics: '📱', 
-  international: '✈️', 
+  heavy_machinery: '🚜',
+  electronics: '📱',
+  international: '✈️',
   fashion: '👕',
 };
 
@@ -93,23 +94,16 @@ export default function Home({ activeVendor, onVendorLogout, cartCount = 0 }) {
             rawProducts = data.data;
           }
 
-          // Helper to format relative image paths into absolute backend server URLs
           const resolveImageUrl = (img) => {
             if (!img || typeof img !== 'string') return FALLBACK_IMAGE;
-            if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')) {
-              return img;
-            }
-            // Strip '/api' suffix from API_BASE_URL to resolve root backend domain
-            const serverBase = API_BASE_URL.replace(/\/api\/?$/, '');
-            const cleanPath = img.startsWith('/') ? img : `/${img}`;
-            return `${serverBase}${cleanPath}`;
+            return resolveMediaUrl(img) || FALLBACK_IMAGE;
           };
 
           // 2. Marketplace Strategy: Normalize objects and resolve image paths before rendering
           const normalizedProducts = rawProducts.map((prod) => {
-            const rawImg = 
-              prod.imageUrl || 
-              prod.image || 
+            const rawImg =
+              prod.imageUrl ||
+              prod.image ||
               prod.image_url ||
               (Array.isArray(prod.images) && prod.images.length > 0 ? prod.images[0] : null);
 
@@ -128,12 +122,12 @@ export default function Home({ activeVendor, onVendorLogout, cartCount = 0 }) {
               title: prod.title || prod.name || 'Unnamed Product',
               salePrice: prod.price || prod.salePrice || 0,
               // Ensure category is a string value (extracting .name if object)
-              category: typeof prod.category === 'object' 
-                ? (prod.category?.name || prod.category?.slug || 'General') 
+              category: typeof prod.category === 'object'
+                ? (prod.category?.name || prod.category?.slug || 'General')
                 : (prod.category || 'General'),
               // Ensure vendor/shop is a string value
-              vendor: typeof prod.vendor === 'object' 
-                ? (prod.vendor?.shopName || prod.vendor?.name || 'BravoMart Seller') 
+              vendor: typeof prod.vendor === 'object'
+                ? (prod.vendor?.shopName || prod.vendor?.name || 'BravoMart Seller')
                 : (prod.vendor || 'BravoMart Seller'),
             };
           });
