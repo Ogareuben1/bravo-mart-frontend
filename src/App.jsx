@@ -124,9 +124,8 @@ export default function App() {
   };
 
   return (
-    <Router basename="/bravomart-frontend">
+    <Router>
       <div className="min-h-screen bg-paper text-ink font-sans">
-        
         {/* APPLICATION ROUTES */}
         <Routes>
           {/* Main Authentic Homepage */}
@@ -142,22 +141,44 @@ export default function App() {
           />
 
           {/* E-Commerce Marketplace Route */}
-          <Route 
-            path="/marketplace" 
+          <Route
+            path="/marketplace"
             element={
-              <Marketplace 
+              <Marketplace
                 activeVendor={activeVendor}
                 onVendorLogout={handleVendorLogout}
-                cartItems={cartItems} 
-                setCartItems={setCartItems} 
+                cartItems={cartItems}
+                setCartItems={setCartItems}
               />
-            } 
+            }
           />
 
           {/* Individual Page Routes */}
-          <Route path="/account" element={<AccountPage userAccount={userAccount} setUserAccount={setUserAccount} activeVendor={activeVendor} onVendorLogout={handleVendorLogout} cartCount={cartItems.length} />} />
-          <Route path="/login" element={<AccountPage userAccount={userAccount} setUserAccount={setUserAccount} activeVendor={activeVendor} onVendorLogout={handleVendorLogout} cartCount={cartItems.length} />} />
-          
+          <Route
+            path="/account"
+            element={
+              <AccountPage
+                userAccount={userAccount}
+                setUserAccount={setUserAccount}
+                activeVendor={activeVendor}
+                onVendorLogout={handleVendorLogout}
+                cartCount={cartItems.length}
+              />
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <AccountPage
+                userAccount={userAccount}
+                setUserAccount={setUserAccount}
+                activeVendor={activeVendor}
+                onVendorLogout={handleVendorLogout}
+                cartCount={cartItems.length}
+              />
+            }
+          />
+
           <Route path="/vendor_login" element={<VendorLogin onLogin={handleVendorLogin} />} />
           <Route path="/vendor_register" element={<VendorRegister />} />
           <Route path="/sell" element={<VendorRegister />} />
@@ -180,22 +201,22 @@ export default function App() {
 
           {/* Admin & Portal Routes */}
           <Route path="/BravoAdmin" element={<BravoAdmin />} />
-          
-          <Route 
-            path="/BravoSuperAdmin" 
+
+          <Route
+            path="/BravoSuperAdmin"
             element={
-              <BravoSuperAdmin 
+              <BravoSuperAdmin
                 pendingVendorsCount={pendingVendorsCount}
                 setPendingVendorsCount={setPendingVendorsCount}
                 vendorProducts={vendorProducts}
               />
-            } 
+            }
           />
-          
-          <Route 
-            path="/AdminAiAssistant" 
+
+          <Route
+            path="/AdminAiAssistant"
             element={
-              <AdminAiAssistant 
+              <AdminAiAssistant
                 activeVendor={activeVendor}
                 sessionChecked={sessionChecked}
                 vendorProducts={vendorProducts}
@@ -204,13 +225,18 @@ export default function App() {
                 onUpdateStock={handleUpdateStock}
                 onLogout={handleVendorLogout}
               />
-            } 
+            }
           />
-          
+
           <Route path="/DispatcherPortal" element={<DispatcherPortal />} />
           <Route
             path="/tracker"
-            element={<DispatchRiderTracker activeVendor={activeVendor} onVendorLogout={handleVendorLogout} />}
+            element={
+              <DispatchRiderTracker
+                activeVendor={activeVendor}
+                onVendorLogout={handleVendorLogout}
+              />
+            }
           />
 
           {/* Fallback for unknown URLs */}
