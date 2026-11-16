@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { CATEGORIES, PRODUCTS as INITIAL_MOCK_PRODUCTS } from '../data/mockData';
+import { resolveMediaUrl } from '../services/api';
 
 import Navbar from '../components/Navbar';
 import AiScamModal from '../components/AiScamModal';
@@ -43,7 +44,7 @@ export default function Marketplace({ activeVendor, onVendorLogout, cartItems = 
 
   const [selectedCategory, setSelectedCategory] = useState(urlCategory);
   const [searchQuery, setSearchQuery] = useState(urlSearch);
-  
+
   // Live API State
   const [products, setProducts] = useState(INITIAL_MOCK_PRODUCTS);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
@@ -78,23 +79,34 @@ export default function Marketplace({ activeVendor, onVendorLogout, cartItems = 
 
         const res = await fetch(`${API_BASE_URL}/products?${queryParams.toString()}`);
         if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-        
+
         const data = await res.json();
-        
+        const rawList = Array.isArray(data?.data?.items)
+          ? data.data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data)
+              ? data
+              : [];
+
         // Map backend API schema to matching frontend properties
-        const liveItems = (data.data || []).map((item) => ({
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          salePrice: item.price,
-          originalPrice: item.price * 1.15,
-          category: item.category?.name || item.category || 'General',
-          vendorName: item.vendor?.shopName || 'Verified Vendor',
-          image: item.imageUrl || FALLBACK_IMAGE,
-          rating: 4.8,
-          isFlashDrop: item.isAiGenerated,
-          tags: item.tags || [],
-        }));
+        const liveItems = rawList.map((item) => {
+          const resolvedImg = item.imageUrl ? resolveMediaUrl(item.imageUrl) : FALLBACK_IMAGE;
+          return {
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            salePrice: Number(item.price) || 0,
+            originalPrice: (Number(item.price) || 0) * 1.15,
+            category: item.category?.name || item.category || 'General',
+            vendorName: item.vendor?.shopName || 'Verified Vendor',
+            image: resolvedImg,
+            imageUrl: resolvedImg,
+            rating: 4.8,
+            isFlashDrop: Boolean(item.isAiGenerated),
+            tags: item.tags || [],
+          };
+        });
 
         if (liveItems.length > 0) {
           setProducts(liveItems);
