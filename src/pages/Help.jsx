@@ -102,7 +102,7 @@ export default function Help() {
                 <MessageSquare className="mx-auto text-moss-700" size={26} />
                 <h4 className="text-sm font-medium text-ink">WhatsApp live chat</h4>
                 <p className="text-[11px] text-ink-faint">Instant responses from active agents.</p>
-                <a href="https://wa.me/2348000000000" target="_blank" rel="noreferrer" className="btn-primary btn-sm mt-1 inline-flex">
+                <a href="https://wa.me/2348103034205" target="_blank" rel="noreferrer" className="btn-primary btn-sm mt-1 inline-flex">
                   Start chat
                 </a>
               </div>
@@ -110,8 +110,8 @@ export default function Help() {
                 <Phone className="mx-auto text-moss-700" size={26} />
                 <h4 className="text-sm font-medium text-ink">Phone hotline</h4>
                 <p className="text-[11px] text-ink-faint">Mon–Sat, 8:00am–8:00pm WAT.</p>
-                <a href="tel:+2348000000000" className="btn-secondary btn-sm mt-1 inline-flex">
-                  0800-BRAVO-HELP
+                <a href="tel:+2348103034205" className="btn-secondary btn-sm mt-1 inline-flex">
+                  08103034205
                 </a>
               </div>
               <div className="card space-y-2 p-5 text-center">

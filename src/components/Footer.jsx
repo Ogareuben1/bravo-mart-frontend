@@ -62,7 +62,7 @@ export default function Footer({ onSelectCategory }) {
             className="card w-full p-3 text-left hover:border-line-strong transition-colors cursor-pointer"
           >
             <span className="block text-[11px] uppercase tracking-wide text-ink-faint">Support hotline</span>
-            <strong className="inline-flex items-center gap-1.5 text-sm text-ink"><Phone size={13} /> +234 800 BRAVO MART</strong>
+            <strong className="inline-flex items-center gap-1.5 text-sm text-ink"><Phone size={13} /> +234 8103034205</strong>
           </button>
         </div>
       </div>
